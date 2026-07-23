@@ -21,16 +21,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [emailError, setEmailError] = useState("")
   const [passwordError, setPasswordError] = useState("")
+  const [formError, setFormError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    setFormError("")
+
+    const normalizedEmail = email.trim().toLowerCase()
     let hasError = false
 
-    if (email.trim() === "") {
+    if (normalizedEmail === "") {
       setEmailError("Email is required.")
       hasError = true
-    } else if (!EMAIL_REGEX.test(email)) {
+    } else if (!EMAIL_REGEX.test(normalizedEmail)) {
       setEmailError("Please enter a valid email address.")
       hasError = true
     } else {
@@ -46,7 +51,30 @@ export default function LoginPage() {
 
     if (hasError) return
 
-    window.location.href = "https://training-mocha-delta.vercel.app/"
+    setIsLoading(true)
+
+    try {
+      const res = await fetch("/authorized-users.json", { cache: "no-store" })
+      const users: Array<{ email: string; password: string }> = await res.json()
+
+      const matchedUser = users.find((user) => user.email.trim().toLowerCase() === normalizedEmail)
+
+      if (!matchedUser) {
+        setFormError("No account was found for this email.")
+        return
+      }
+
+      if (matchedUser.password !== password) {
+        setFormError("Incorrect password.")
+        return
+      }
+
+      window.location.href = "https://training-mocha-delta.vercel.app/"
+    } catch {
+      setFormError("Something went wrong. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -129,6 +157,7 @@ export default function LoginPage() {
                     onChange={(e) => {
                       setEmail(e.target.value)
                       if (emailError) setEmailError("")
+                      if (formError) setFormError("")
                     }}
                     placeholder="name@example.com"
                     aria-invalid={!!emailError}
@@ -154,6 +183,7 @@ export default function LoginPage() {
                         onChange={(e) => {
                           setPassword(e.target.value)
                           if (passwordError) setPasswordError("")
+                          if (formError) setFormError("")
                         }}
                         placeholder="Enter password"
                         aria-invalid={!!passwordError}
@@ -233,13 +263,20 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 text-sm font-medium text-white hover:opacity-90 rounded-lg shadow-none cursor-pointer"
+                disabled={isLoading}
+                className="w-full h-12 text-sm font-medium text-white hover:opacity-90 rounded-lg shadow-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                 style={{ backgroundColor: "#3F3FF3" }}
               >
-                {currentView === "login" && "Log In"}
+                {currentView === "login" && (isLoading ? "Logging In..." : "Log In")}
                 {currentView === "register" && "Create Account"}
                 {currentView === "forgot" && "Send Reset Link"}
               </Button>
+
+              {formError && (
+                <p className="text-center text-sm text-red-500" role="alert">
+                  {formError}
+                </p>
+              )}
             </form>
 
             {currentView !== "forgot" && (
