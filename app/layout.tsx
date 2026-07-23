@@ -23,18 +23,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <style>{`
-html {
-  font-family: ${GeistSans.style.fontFamily};
-  --font-sans: ${GeistSans.variable};
-  --font-mono: ${GeistMono.variable};
-  --font-dm-sans: ${dmSans.variable};
-}
-        `}</style>
-      </head>
-      <body className={dmSans.variable}>{children}</body>
+    <html
+      lang="en"
+      className={`${GeistSans.variable} ${GeistMono.variable} ${dmSans.variable} bg-background`}
+    >
+      <body className="font-sans">{children}</body>
     </html>
   )
 }
